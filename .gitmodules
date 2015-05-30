@@ -1,0 +1,3 @@
+[submodule "libcmark-sys/cmark"]
+	path = libcmark-sys/cmark
+	url = https://github.com/jgm/cmark.git

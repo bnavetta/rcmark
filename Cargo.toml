@@ -1,0 +1,4 @@
+[package]
+name = "rcmark"
+version = "0.1.0"
+authors = ["Ben Navetta <ben.navetta@gmail.com>"]

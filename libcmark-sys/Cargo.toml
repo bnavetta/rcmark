@@ -1,0 +1,14 @@
+[package]
+name = "libcmark-sys"
+version = "0.0.1"
+authors = ["Ben Navetta <ben.navetta@gmail.com>"]
+links = "cmark"
+build = "build.rs"
+license = "Apache-2.0/MIT"
+description = "Native bindings to the libcmark library"
+
+[dependencies]
+libc = "0.1"
+
+[build-dependencies]
+pkg-config = "0.3"
