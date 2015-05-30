@@ -21,7 +21,6 @@ fn main() {
     let mut cmd = Command::new("cmake");
     cmd.arg(&src.join("cmark"))
         .arg("-DBUILD_SHARED_LIBS=OFF")
-        .arg("-DBUILD_CLAR=OFF")
         .arg(&format!("-DCMAKE_INSTALL_PREFIX={}", dest.display()))
         .current_dir(&build);
     run(&mut cmd);
@@ -33,23 +32,9 @@ fn main() {
 
     println!("cargo:root={}", dest.display());
 
-    if env::var("HOST") == env::var("TARGET") {
-        prepend("PKG_CONFIG_PATH", dest.join("lib/pkgconfig"));
-        if pkg_config::Config::new().statik(true).find("libcmark").is_ok() {
-            return;
-        }
-    }
-
+    // the static library isn't installed
     println!("cargo:rustc-flags=-l static=cmark");
-    println!("cargo:rustc-flags=-L {}", dest.join("lib").display());
-}
-
-// From libgit2-sys build script
-fn prepend(var: &str, val: PathBuf) {
-    let prefix = env::var(var).unwrap_or(String::new());
-    let mut path = vec![val];
-    path.extend(env::split_paths(&prefix));
-    env::set_var(var, &env::join_paths(path).unwrap());
+    println!("cargo:rustc-flags=-L {}", build.join("src").display());
 }
 
 fn run(cmd: &mut Command) {
