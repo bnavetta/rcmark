@@ -9,6 +9,7 @@ description = "Native bindings to the libcmark library"
 
 [dependencies]
 libc = "0.1"
+libcmark-sys = { path = "libcmark-sys", version = "0.0.1" }
 
 [build-dependencies]
 pkg-config = "0.3"
