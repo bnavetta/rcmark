@@ -1,23 +1,19 @@
 use {raw, EventType, Node};
 
-use std::marker::PhantomData;
-
-pub struct NodeIterator<'iter> {
+pub struct NodeIterator {
     raw: *mut raw::cmark_iter,
-    phantom: PhantomData<&'iter Node<'iter>>
 }
 
-impl<'iter> NodeIterator<'iter> {
-    pub fn from_raw(raw: *mut raw::cmark_iter) -> NodeIterator<'iter> {
+impl NodeIterator {
+    pub fn from_raw(raw: *mut raw::cmark_iter) -> NodeIterator {
         NodeIterator {
             raw: raw,
-            phantom: PhantomData,
         }
     }
 
     pub fn raw(&self) -> *mut raw::cmark_iter { self.raw }
 
-    pub fn new(root: &Node<'iter>) -> NodeIterator<'iter> {
+    pub fn new(root: &Node) -> NodeIterator {
         let raw_iter = unsafe {
             raw::cmark_iter_new(root.raw())
         };
@@ -30,11 +26,9 @@ impl<'iter> NodeIterator<'iter> {
         }
     }
 
-    pub fn node(&self) -> &'iter Node {
+    pub fn node(&self) -> Node {
         unsafe {
-            let node_ptr: &'iter mut raw::cmark_node = raw::cmark_iter_get_node(self.raw);
-            &Node::from_raw(node_ptr);
-            // &Node::from_raw(raw::cmark_iter_get_node(self.raw))
+            Node::from_raw(raw::cmark_iter_get_node(self.raw), false)
         }
     }
 
@@ -44,20 +38,14 @@ impl<'iter> NodeIterator<'iter> {
         })
     }
 
-    pub fn root(&self) -> &'iter Node {
+    pub fn root(&self) -> Node {
         unsafe {
-            &Node::from_raw(raw::cmark_iter_get_root(self.raw))
-        }
-    }
-
-    pub fn iter(&'iter self) -> Iter<'iter> {
-        Iter {
-            node_iter: self,
+            Node::from_raw(raw::cmark_iter_get_root(self.raw), false)
         }
     }
 }
 
-impl<'iter> Drop for NodeIterator<'iter> {
+impl Drop for NodeIterator {
     fn drop(&mut self) {
         unsafe {
             raw::cmark_iter_free(self.raw)
@@ -65,56 +53,18 @@ impl<'iter> Drop for NodeIterator<'iter> {
     }
 }
 
-impl<'iter> IntoIterator for &'iter NodeIterator<'iter> {
-    type Item = (EventType, &'iter Node<'iter>);
-    type IntoIter = Iter<'iter>;
+impl Iterator for NodeIterator {
+    type Item = (EventType, Node);
 
-    fn into_iter(self) -> Iter<'iter> {
-        self.iter()
-    }
-}
-
-// impl<'a> IntoIterator for &'a mut NodeIterator {
-//     type Item = (EventType, &'a mut Node);
-//     type IntoIter = IterMut<'a>;
-
-//     fn into_iter(self) -> IterMut<'a> {
-//         self.iter_mut()
-//     }
-// }
-
-pub struct Iter<'iter> {
-    node_iter: &'iter NodeIterator<'iter>,
-}
-
-impl<'iter> Iterator for Iter<'iter> {
-    type Item = (EventType, &'iter Node<'iter>);
-
-    fn next(&mut self) -> Option<(EventType, &'iter Node)> {
-        let next_event_raw = unsafe { raw::cmark_iter_next(self.node_iter.raw) };
+    fn next(&mut self) -> Option<(EventType, Node)> {
+        let next_event_raw = unsafe { raw::cmark_iter_next(self.raw) };
         if next_event_raw == raw::CMARK_EVENT_NONE {
             None
         }
         else {
             let next_event = EventType::from_raw(next_event_raw);
-            let next_node = self.node_iter.node();
-            Some((next_event, &next_node))
+            let next_node = self.node();
+            Some((next_event, next_node))
         }
     }
 }
-
-// impl Iterator for NodeIterator {
-//     type Item = (EventType, &mut Node);
-
-//     pub fn next<'a>(&'a mut self) -> Option<(EventType, &'a mut Node)> {
-//         let next_event_raw = unsafe { raw::cmark_iter_next(self.raw) };
-//         if next_event_raw == raw::CMARK_EVENT_NONE {
-//             None
-//         }
-//         else {
-//             let next_event = EventType::from_raw(next_event_raw);
-//             let next_node = self.node();
-//             Some((next_event, next_node))
-//         }
-//     }
-// }

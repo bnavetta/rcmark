@@ -2,6 +2,7 @@ extern crate libc;
 extern crate libcmark_sys as raw;
 
 pub use node::Node;
+pub use iter::NodeIterator;
 
 mod node;
 mod iter;
