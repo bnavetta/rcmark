@@ -7,9 +7,10 @@ use libc::{c_int, c_char, c_void, size_t};
 pub use cmark_node_type::*;
 pub use cmark_list_type::*;
 pub use cmark_delim_type::*;
+pub use cmark_event_type::*;
 
 #[repr(C)]
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq, Eq)]
 pub enum cmark_node_type {
     // Error status
     CMARK_NODE_NONE,
@@ -44,7 +45,7 @@ pub enum cmark_node_type {
 }
 
 #[repr(C)]
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq, Eq)]
 pub enum cmark_list_type {
     CMARK_NO_LIST,
     CMARK_BULLET_LIST,
@@ -52,7 +53,7 @@ pub enum cmark_list_type {
 }
 
 #[repr(C)]
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq, Eq)]
 pub enum cmark_delim_type {
     CMARK_NO_DELIM,
     CMARK_PERIOD_DELIM,
@@ -60,7 +61,7 @@ pub enum cmark_delim_type {
 }
 
 #[repr(C)]
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq, Eq)]
 pub enum cmark_event_type {
     CMARK_EVENT_NONE,
     CMARK_EVENT_DONE,

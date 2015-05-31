@@ -4,6 +4,7 @@ extern crate libcmark_sys as raw;
 pub use node::Node;
 
 mod node;
+mod iter;
 
 #[derive(PartialEq, Eq, Clone, Copy, Debug)]
 pub enum NodeType {
@@ -124,6 +125,34 @@ impl DelimType {
             DelimType::NoDelim => raw::CMARK_NO_DELIM,
             DelimType::Period => raw::CMARK_PERIOD_DELIM,
             DelimType::Paren => raw::CMARK_PAREN_DELIM,
+        }
+    }
+}
+
+#[derive(PartialEq, Eq, Clone, Copy, Debug)]
+pub enum EventType {
+    None,
+    Done,
+    Enter,
+    Exit
+}
+
+impl EventType {
+    pub fn from_raw(raw_type: raw::cmark_event_type) -> EventType {
+        match raw_type {
+            raw::CMARK_EVENT_NONE => EventType::None,
+            raw::CMARK_EVENT_DONE => EventType::Done,
+            raw::CMARK_EVENT_ENTER => EventType::Enter,
+            raw::CMARK_EVENT_EXIT => EventType::Exit,
+        }
+    }
+
+    pub fn raw(&self) -> raw::cmark_event_type {
+        match *self {
+            EventType::None => raw::CMARK_EVENT_NONE,
+            EventType::Done => raw::CMARK_EVENT_DONE,
+            EventType::Enter => raw::CMARK_EVENT_ENTER,
+            EventType::Exit => raw::CMARK_EVENT_EXIT,
         }
     }
 }
