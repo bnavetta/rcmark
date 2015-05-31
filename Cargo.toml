@@ -8,3 +8,7 @@ keywords = ["commonmark", "markdown"]
 description = """
 Bindings to cmark for parsing and rendering CommonMark.
 """
+
+[dependencies]
+libc = "0.1"
+libcmark-sys = { path = "libcmark-sys", version = "0.0.1" }

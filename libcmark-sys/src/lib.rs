@@ -4,6 +4,10 @@ extern crate libc;
 
 use libc::{c_int, c_char, c_void, size_t};
 
+pub use cmark_node_type::*;
+pub use cmark_list_type::*;
+pub use cmark_delim_type::*;
+
 #[repr(C)]
 #[derive(Copy, Clone)]
 pub enum cmark_node_type {
