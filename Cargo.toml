@@ -2,3 +2,9 @@
 name = "rcmark"
 version = "0.1.0"
 authors = ["Ben Navetta <ben.navetta@gmail.com>"]
+license = "Apache-2.0/MIT"
+readme = "README.md"
+keywords = ["commonmark", "markdown"]
+description = """
+Bindings to cmark for parsing and rendering CommonMark.
+"""
