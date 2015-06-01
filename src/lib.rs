@@ -6,11 +6,13 @@ extern crate bitflags;
 
 pub use node::Node;
 pub use iter::NodeIterator;
-pub use parser::{Parser, ParserOptions, parse_document};
+pub use parser::{Parser, parse_document};
+pub use render::{render_xml, render_html, render_man, render_commonmark};
 
 mod node;
 mod iter;
 mod parser;
+mod render;
 
 #[derive(PartialEq, Eq, Clone, Copy, Debug)]
 pub enum NodeType {
@@ -160,5 +162,21 @@ impl EventType {
             EventType::Enter => raw::CMARK_EVENT_ENTER,
             EventType::Exit => raw::CMARK_EVENT_EXIT,
         }
+    }
+}
+
+bitflags! {
+    flags CmarkOptions: i32 {
+        const DEFAULT = raw::CMARK_OPT_DEFAULT as i32,
+        const SOURCEPOS = raw::CMARK_OPT_SOURCEPOS as i32,
+        const HARDBREAKS = raw::CMARK_OPT_HARDBREAKS as i32,
+        const NORMALIZE = raw::CMARK_OPT_NORMALIZE as i32,
+        const SMART = raw::CMARK_OPT_SMART as i32,
+    }
+}
+
+impl CmarkOptions {
+    pub fn raw(&self) -> libc::c_int {
+        self.bits as libc::c_int
     }
 }

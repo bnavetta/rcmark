@@ -1,24 +1,8 @@
 
-use {raw, Node};
+use {raw, Node, CmarkOptions};
 
 use std::ffi::CString;
 use libc;
-
-bitflags! {
-    flags ParserOptions: i32 {
-        const DEFAULT = raw::CMARK_OPT_DEFAULT as i32,
-        const SOURCEPOS = raw::CMARK_OPT_SOURCEPOS as i32,
-        const HARDBREAKS = raw::CMARK_OPT_HARDBREAKS as i32,
-        const NORMALIZE = raw::CMARK_OPT_NORMALIZE as i32,
-        const SMART = raw::CMARK_OPT_SMART as i32,
-    }
-}
-
-impl ParserOptions {
-    pub fn raw(&self) -> libc::c_int {
-        self.bits as libc::c_int
-    }
-}
 
 pub struct Parser {
     raw: *mut raw::cmark_parser,
@@ -33,7 +17,7 @@ impl Parser {
 
     pub fn raw(&self) -> *mut raw::cmark_parser { self.raw }
 
-    pub fn new(options: ParserOptions) -> Parser {
+    pub fn new(options: CmarkOptions) -> Parser {
         unsafe {
             Parser::from_raw(raw::cmark_parser_new(options.raw()))
         }
@@ -63,7 +47,7 @@ impl Drop for Parser {
 
 // TODO: maybe implement appropriate Write traits
 
-pub fn parse_document(doc: &str, options: ParserOptions) -> Node {
+pub fn parse_document(doc: &str, options: CmarkOptions) -> Node {
     unsafe {
         let c_doc = CString::new(doc).unwrap();
         Node::from_raw(raw::cmark_parse_document(c_doc.as_ptr(), c_doc.to_bytes().len() as libc::size_t, options.raw()), true)
@@ -73,7 +57,7 @@ pub fn parse_document(doc: &str, options: ParserOptions) -> Node {
 #[cfg(test)]
 mod test{
     use super::*;
-    use super::super::NodeType;
+    use super::super::{NodeType, DEFAULT};
 
     #[test]
     pub fn basic_parse() {
