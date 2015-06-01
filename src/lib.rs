@@ -1,11 +1,16 @@
 extern crate libc;
 extern crate libcmark_sys as raw;
 
+#[macro_use]
+extern crate bitflags;
+
 pub use node::Node;
 pub use iter::NodeIterator;
+pub use parser::{Parser, ParserOptions, parse_document};
 
 mod node;
 mod iter;
+mod parser;
 
 #[derive(PartialEq, Eq, Clone, Copy, Debug)]
 pub enum NodeType {
