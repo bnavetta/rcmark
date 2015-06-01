@@ -6,6 +6,8 @@ links = "cmark"
 build = "build.rs"
 license = "Apache-2.0/MIT"
 description = "Native bindings to the libcmark library"
+homepage = "https://github.com/roguePanda/rcmark"
+repository = "https://github.com/roguePanda/rcmark.git"
 
 [dependencies]
 libc = "0.1"

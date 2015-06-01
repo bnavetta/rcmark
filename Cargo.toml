@@ -8,6 +8,8 @@ keywords = ["commonmark", "markdown"]
 description = """
 Bindings to cmark for parsing and rendering CommonMark.
 """
+homepage = "https://github.com/roguePanda/rcmark"
+repository = "https://github.com/roguePanda/rcmark.git"
 
 [dependencies]
 libc = "0.1"
