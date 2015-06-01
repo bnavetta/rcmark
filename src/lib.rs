@@ -83,6 +83,9 @@ pub use iter::NodeIterator;
 pub use parser::{Parser, parse_document};
 pub use render::{render_xml, render_html, render_man, render_commonmark};
 
+use std::ffi::CStr;
+use std::str;
+
 mod node;
 mod iter;
 mod parser;
@@ -197,7 +200,7 @@ pub enum DelimType {
     NoDelim,
     /// Numbers are written as `1.`
     Period,
-    /// Numbers are written as `1)` 
+    /// Numbers are written as `1)`
     Paren
 }
 
@@ -267,5 +270,18 @@ bitflags! {
 impl CmarkOptions {
     pub fn raw(&self) -> libc::c_int {
         self.bits as libc::c_int
+    }
+}
+
+pub fn cmark_version() -> i32 {
+    unsafe {
+        raw::cmark_version as i32
+    }
+}
+
+pub fn version<'a>() -> &'a str {
+    unsafe {
+        str::from_utf8(
+            CStr::from_ptr(raw::cmark_version_string).to_bytes()).unwrap()
     }
 }
