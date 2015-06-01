@@ -246,6 +246,42 @@ impl Node {
             raw::cmark_node_get_end_line(self.raw) as i32
         }
     }
+
+    pub fn unlink(&mut self) {
+        unsafe {
+            raw::cmark_node_unlink(self.raw)
+        }
+    }
+
+    pub fn insert_before(&mut self, sibling: &mut Node) -> bool {
+        unsafe {
+            to_bool(raw::cmark_node_insert_before(self.raw, sibling.raw))
+        }
+    }
+
+    pub fn insert_after(&mut self, sibling: &mut Node) -> bool {
+        unsafe {
+            to_bool(raw::cmark_node_insert_after(self.raw, sibling.raw))
+        }
+    }
+
+    pub fn prepend_child(&mut self, child: &mut Node) -> bool {
+        unsafe {
+            to_bool(raw::cmark_node_prepend_child(self.raw, child.raw))
+        }
+    }
+
+    pub fn append_child(&mut self, child: &mut Node) -> bool {
+        unsafe {
+            to_bool(raw::cmark_node_append_child(self.raw, child.raw))
+        }
+    }
+
+    pub fn consolidate_text_nodes(&mut self) {
+        unsafe {
+            raw::cmark_consolidate_text_nodes(self.raw)
+        }
+    }
 }
 
 impl Drop for Node {
