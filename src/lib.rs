@@ -1,8 +1,82 @@
+//!# libcmark bindings for Rust
+//!
+//! This library contains bindings to the [libcmark][1] C library, which is the
+//! C reference implementation of the [CommonMark][2] standard. This binding
+//! does no additional parsing work beyond that of the underlying library, so it
+//! ought to be as accurate.
+//!
+//! [1]: https://github.com/jgm/cmark
+//! [2]: http://commonmark.org/
+//!
+//!## Nodes
+//!
+//! The `Node` is the core abstraction in rcmark. Nodes can be built up
+//! programmatically or by parsing CommonMark source. Nodes all have a type and
+//! may have parent, child, and sibling nodes. Depending on the node type, a
+//! variety of properties are available. If a property is not applicable to a
+//! given node type, then attempting to access it will return either an empty
+//! `Option` or an appropriate default value.
+//!
+//!```
+//! use rcmark::{Node, NodeType, ListType};
+//!
+//! let mut root = Node::new(NodeType::Document);
+//!
+//! let mut heading = Node::new(NodeType::Header);
+//! heading.set_header_level(1);
+//! assert!(heading.list_type() == ListType::NoList);
+//!
+//! let mut heading_text = Node::new(NodeType::Text);
+//! heading_text.set_literal("Hello, World!");
+//!
+//! heading.prepend_child(&mut heading_text);
+//! root.prepend_child(&mut heading);
+//!```
+//!
+//!## Parsing a Document
+//!
+//! Parsing can be done through either a `Parser` instance or
+//! the all-in-one `parse_document` function.
+//!
+//!```
+//! use rcmark::{Parser, parse_document, DEFAULT, NORMALIZE};
+//!
+//! let doc = parse_document("**Hello**, `World!`", DEFAULT);
+//!
+//! let mut parser = Parser::new(NORMALIZE);
+//! parser.feed("# Hello, World!");
+//! let doc2 = parser.finish();
+//!```
+//!
+//!## Rendering a Document
+//!
+//! Rendering could be done manually, but libcmark also provides
+//! functions to render to XML, HTML, man pages, and CommonMark.
+//!
+//!```
+//! let doc = rcmark::parse_document("# Hello", rcmark::DEFAULT);
+//!
+//! assert_eq!(rcmark::render_xml(&doc, rcmark::DEFAULT),
+//!            "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n\
+//!             <!DOCTYPE CommonMark SYSTEM \"CommonMark.dtd\">\n\
+//!             <document>\n  \
+//!               <header level=\"1\">\n    \
+//!                 <text>Hello</text>\n  \
+//!               </header>\n\
+//!             </document>\n");
+//! assert_eq!(rcmark::render_html(&doc, rcmark::DEFAULT),
+//!            "<h1>Hello</h1>\n");
+//! assert_eq!(rcmark::render_man(&doc, rcmark::DEFAULT),
+//!            ".SH\nHello\n");
+//! assert_eq!(rcmark::render_commonmark(&doc, rcmark::DEFAULT, 2),
+//!            "# Hello\n");
+//!```
+
+#[deny(missing_docs)]
+
 extern crate libc;
 extern crate libcmark_sys as raw;
-
-#[macro_use]
-extern crate bitflags;
+#[macro_use] extern crate bitflags;
 
 pub use node::Node;
 pub use iter::NodeIterator;
@@ -14,8 +88,10 @@ mod iter;
 mod parser;
 mod render;
 
+/// The types of nodes that make up a CommonMark document.
 #[derive(PartialEq, Eq, Clone, Copy, Debug)]
 pub enum NodeType {
+    /// Error status
     None,
     Document,
     BlockQuote,
@@ -38,6 +114,7 @@ pub enum NodeType {
 }
 
 impl NodeType {
+    /// Obtain a `NodeType` from the corresponding raw `cmark_node_type` enum value.
     pub fn from_raw(raw_type: raw::cmark_node_type) -> NodeType {
         match raw_type {
             raw::CMARK_NODE_NONE => NodeType::None,
@@ -62,6 +139,7 @@ impl NodeType {
         }
     }
 
+    /// Obtain the raw `cmark_node_type` enum value from a `NodeType`.
     pub fn raw(&self) -> raw::cmark_node_type {
         match *self {
             NodeType::None => raw::CMARK_NODE_NONE,
@@ -87,6 +165,7 @@ impl NodeType {
     }
 }
 
+/// The type of CommonMark list.
 #[derive(PartialEq, Eq, Clone, Copy, Debug)]
 pub enum ListType {
     NoList,
@@ -112,10 +191,13 @@ impl ListType {
     }
 }
 
+// The type of list delimiter in an ordered list.
 #[derive(PartialEq, Eq, Clone, Copy, Debug)]
 pub enum DelimType {
     NoDelim,
+    /// Numbers are written as `1.`
     Period,
+    /// Numbers are written as `1)` 
     Paren
 }
 
@@ -137,6 +219,7 @@ impl DelimType {
     }
 }
 
+/// The event types that may be produced by a node iterator.
 #[derive(PartialEq, Eq, Clone, Copy, Debug)]
 pub enum EventType {
     None,
@@ -165,12 +248,18 @@ impl EventType {
     }
 }
 
+/// Options for parsing and rendering a node tree.
 bitflags! {
     flags CmarkOptions: i32 {
+        #[doc="Default writer options"]
         const DEFAULT = raw::CMARK_OPT_DEFAULT as i32,
+        #[doc="Include a `data-sourcepos` attribute on block elements"]
         const SOURCEPOS = raw::CMARK_OPT_SOURCEPOS as i32,
+        #[doc="Render `softbreak` elements as hard line breaks"]
         const HARDBREAKS = raw::CMARK_OPT_HARDBREAKS as i32,
+        #[doc="Normalize the tree by consolidating adjacent text nodes"]
         const NORMALIZE = raw::CMARK_OPT_NORMALIZE as i32,
+        #[doc="Convert straight quotes to curly quotes, `---` to `—`, and `--` to `–`"]
         const SMART = raw::CMARK_OPT_SMART as i32,
     }
 }
