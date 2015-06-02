@@ -71,7 +71,7 @@
 //!            "# Hello\n");
 //!```
 #![feature(concat_idents)]
-#[deny(missing_docs)]
+#![deny(missing_docs)]
 
 extern crate libc;
 extern crate libcmark_sys as raw;
