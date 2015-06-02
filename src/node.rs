@@ -1,6 +1,7 @@
 use {raw, NodeType, ListType, DelimType, NodeIterator};
 use util::Binding;
 
+use std::fmt;
 use std::ptr;
 
 macro_rules! node_getter {
@@ -62,8 +63,12 @@ impl Node {
     /// # Examples
     ///
     /// ```no_run
+    /// extern crate libcmark_sys as raw;
+    /// extern crate rcmark;
+    ///
     /// unsafe {
-    ///     let my_node = Node::from_raw(some_raw_node, false);
+    ///     let raw_node = raw::cmark_node_new(raw::CMARK_NODE_LIST);
+    ///     let my_node = rcmark::Node::from_raw(raw_node, false);
     /// }
     /// ```
     pub unsafe fn from_raw(raw: *mut raw::cmark_node, owned: bool) -> Node {
@@ -98,7 +103,10 @@ impl Node {
     /// use rcmark::{Node, parse_document, DEFAULT};
     ///
     /// let my_doc = parse_document("*Hello*", DEFAULT);
-    /// assert_eq!(my_doc.next(), None);
+    /// match my_doc.next() {
+    ///     Some(node) => panic!("Should not be an adjacent node"),
+    ///     None       => (),
+    /// }
     /// ```
     pub fn next(&self) -> Option<Node> {
         unsafe {
@@ -260,6 +268,12 @@ impl Drop for Node {
         if self.owned {
             unsafe { raw::cmark_node_free(self.raw) }
         }
+    }
+}
+
+impl fmt::Debug for Node {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        write!(fmt, "Node[raw = {:p}]", self.raw)
     }
 }
 
