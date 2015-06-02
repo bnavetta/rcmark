@@ -71,7 +71,6 @@
 //!            "# Hello\n");
 //!```
 #![feature(concat_idents)]
-#![feature(trace_macros)]
 #[deny(missing_docs)]
 
 extern crate libc;
