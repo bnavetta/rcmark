@@ -1,2 +1,6 @@
 language: rust
 rust: nightly
+
+before_install:
+  - apt-add-repository ppa:kalakris/cmake
+  - apt-get install cmake
