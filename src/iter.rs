@@ -1,4 +1,5 @@
 use {raw, EventType, Node};
+use util::Binding;
 
 pub struct NodeIterator {
     raw: *mut raw::cmark_iter,
@@ -33,9 +34,9 @@ impl NodeIterator {
     }
 
     pub fn event_type(&self) -> EventType {
-        EventType::from_raw(unsafe {
-            raw::cmark_iter_get_event_type(self.raw)
-        })
+        unsafe {
+            Binding::from_raw(raw::cmark_iter_get_event_type(self.raw))
+        }
     }
 
     pub fn root(&self) -> Node {
@@ -62,7 +63,7 @@ impl Iterator for NodeIterator {
             None
         }
         else {
-            let next_event = EventType::from_raw(next_event_raw);
+            let next_event = unsafe { Binding::from_raw(next_event_raw) };
             let next_node = self.node();
             Some((next_event, next_node))
         }

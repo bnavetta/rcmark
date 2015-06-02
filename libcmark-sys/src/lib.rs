@@ -114,8 +114,8 @@ extern {
     pub fn cmark_node_set_header_level(node: *mut cmark_node, level: c_int) -> c_int;
     pub fn cmark_node_get_list_type(node: *const cmark_node) -> cmark_list_type;
     pub fn cmark_node_set_list_type(node: *mut cmark_node, list_type: cmark_list_type) -> c_int;
-    pub fn cmark_node_get_delim_type(node: *const cmark_node) -> cmark_delim_type;
-    pub fn cmark_node_set_delim_type(node: *mut cmark_node, delim_type: cmark_delim_type) -> c_int;
+    pub fn cmark_node_get_list_delim(node: *const cmark_node) -> cmark_delim_type;
+    pub fn cmark_node_set_list_delim(node: *mut cmark_node, delim_type: cmark_delim_type) -> c_int;
     pub fn cmark_node_get_list_start(node: *const cmark_node) -> c_int;
     pub fn cmark_node_set_list_start(node: *mut cmark_node, start: c_int) -> c_int;
     pub fn cmark_node_get_list_tight(node: *const cmark_node) -> c_int;

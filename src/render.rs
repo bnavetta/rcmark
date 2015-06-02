@@ -1,4 +1,5 @@
 use {raw, Node, CmarkOptions};
+use util::Binding;
 
 use std::ffi::CStr;
 use std::str;

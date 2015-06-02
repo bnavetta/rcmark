@@ -1,31 +1,58 @@
 use {raw, NodeType, ListType, DelimType, NodeIterator};
+use util::Binding;
 
-use std::ffi::{CStr, CString};
-use std::str;
-use libc;
+use std::ptr;
 
-// The representation of nodes is made somewhat difficult by the fact that
-// libcmark uses cmark_node* for both owned and unowned references. For example,
-// both cmark_node_new and cmark_node_parent return a cmark_node*, but only
-// the first should eventually be freed by the caller. Moreover, the Rust Node
-// struct cannot be returned as a reference, because it is created as needed
-// (the pointer it wraps may be owned elsewhere, but it is not). Ideally, this
-// would map to Rust lifetimes, probably with the use of the PhantomData marker,
-// but for the sake of simplicity, the Node struct simply keeps track of whether
-// it owns its raw node pointer.
+macro_rules! node_getter {
+    ($prop:ident : $prop_type:ty => $($node_type:path),*) => {
+        pub fn $prop(&self) -> $prop_type {
+            match self.node_type() {
+                $($node_type => (),)*
+                _ => panic!("{} nodes do not have property {}", self.type_string(), stringify!($prop)),
+            }
+
+            unsafe {
+                use raw::*;
+                let raw_fn = concat_idents!(cmark_node_get_, $prop);
+                Binding::from_raw(raw_fn(self.raw))
+            }
+        }
+    };
+    ($prop:ident : $prop_type:ty) => {
+        pub fn $prop(&self) -> $prop_type {
+            unsafe {
+                use raw::*;
+                let raw_fn = concat_idents!(cmark_node_get_, $prop);
+                Binding::from_raw(raw_fn(self.raw))
+            }
+        } 
+    };
+}
+
+macro_rules! node_setter {
+    // TODO: need to use setter name instead of property name
+    // See https://github.com/rust-lang/rust/issues/12249
+    ($setter:ident : $prop_type:ty => $($node_type:path),*) => {
+        pub fn $setter(&mut self, value: $prop_type) -> bool {
+            unsafe {
+                use raw::*;
+                let raw_fn = concat_idents!(cmark_node_, $setter);
+                Binding::from_raw(raw_fn(self.raw, value.raw()))
+            }
+        }
+    };
+}
 
 pub struct Node { raw: *mut raw::cmark_node,owned: bool,
 }
 
 impl Node {
-    pub unsafe fn from_raw(raw: *mut raw::cmark_node, owned: bool) -> Node {
+     pub unsafe fn from_raw(raw: *mut raw::cmark_node, owned: bool) -> Node {
         Node {
             raw: raw,
             owned: owned,
         }
     }
-
-    pub fn raw(&self) -> *mut raw::cmark_node { self.raw }
 
     pub fn new(node_type: NodeType) -> Node {
         unsafe {
@@ -35,61 +62,31 @@ impl Node {
 
     pub fn next(&self) -> Option<Node> {
         unsafe {
-            let next_ptr = raw::cmark_node_next(self.raw);
-            if next_ptr.is_null() {
-                None
-            }
-            else {
-                Some(Node::from_raw(next_ptr, false))
-            }
+            Binding::from_raw(raw::cmark_node_next(self.raw))
         }
     }
 
     pub fn previous(&self) -> Option<Node> {
         unsafe {
-            let ptr = raw::cmark_node_previous(self.raw);
-            if ptr.is_null() {
-                None
-            }
-            else {
-                Some(Node::from_raw(ptr, false))
-            }
+            Binding::from_raw(raw::cmark_node_previous(self.raw))
         }
     }
 
     pub fn parent(&self) -> Option<Node> {
         unsafe {
-            let ptr = raw::cmark_node_parent(self.raw);
-            if ptr.is_null() {
-                None
-            }
-            else {
-                Some(Node::from_raw(ptr, false))
-            }
+            Binding::from_raw(raw::cmark_node_parent(self.raw))
         }
     }
 
     pub fn first_child(&self) -> Option<Node> {
         unsafe {
-            let ptr = raw::cmark_node_first_child(self.raw);
-            if ptr.is_null() {
-                None
-            }
-            else {
-                Some(Node::from_raw(ptr, false))
-            }
+            Binding::from_raw(raw::cmark_node_first_child(self.raw))
         }
     }
 
     pub fn last_child(&self) -> Option<Node> {
         unsafe {
-            let ptr = raw::cmark_node_last_child(self.raw);
-            if ptr.is_null() {
-                None
-            }
-            else {
-                Some(Node::from_raw(ptr, false))
-            }
+            Binding::from_raw(raw::cmark_node_last_child(self.raw))
         }
     }
 
@@ -98,154 +95,52 @@ impl Node {
     }
 
     pub fn node_type(&self) -> NodeType {
-        NodeType::from_raw(unsafe {
-            raw::cmark_node_get_type(self.raw)
-        })
-    }
-
-    pub fn node_type_string(&self) -> &str {
         unsafe {
-            let c_str =
-                CStr::from_ptr(raw::cmark_node_get_type_string(self.raw));
-            str::from_utf8(c_str.to_bytes()).unwrap()
+            Binding::from_raw(raw::cmark_node_get_type(self.raw))
         }
     }
 
-    pub fn literal(&self) -> Option<&str> {
-        unsafe {
-            from_string_ptr(raw::cmark_node_get_literal(self.raw))
-        }
-    }
+    node_getter!(type_string : &str);
 
-    pub fn set_literal(&mut self, content: &str) -> bool {
-        unsafe {
-            let cstr = CString::new(content).unwrap();
-            to_bool(raw::cmark_node_set_literal(self.raw, cstr.as_ptr()))
-        }
-    }
+    node_getter!(literal : &str => NodeType::CodeBlock,
+                 NodeType::Code,
+                 NodeType::Text,
+                 NodeType::Html,
+                 NodeType::InlineHtml);
+    node_setter!(set_literal : &str => NodeType::CodeBlock,
+                 NodeType::Code,
+                 NodeType::Text,
+                 NodeType::Html,
+                 NodeType::InlineHtml);
 
-    pub fn header_level(&self) -> i32 {
-        unsafe {
-            raw::cmark_node_get_header_level(self.raw) as i32
-        }
-    }
+    node_getter!(header_level : i32 => NodeType::Header);
+    node_setter!(set_header_level : i32 => NodeType::Header);
 
-    pub fn set_header_level(&mut self, level: i32) -> bool {
-        unsafe {
-            to_bool(raw::cmark_node_set_header_level(self.raw, level as libc::c_int))
-        }
-    }
+    node_getter!(list_type : ListType => NodeType::List);
+    node_setter!(set_list_type : ListType => NodeType::List);
 
-    pub fn list_type(&self) -> ListType {
-        unsafe {
-           ListType::from_raw(raw::cmark_node_get_list_type(self.raw))
-        }
-    }
+    node_getter!(list_delim : DelimType => NodeType::List);
+    node_setter!(set_list_delim : DelimType => NodeType::List);
 
-    pub fn set_list_type(&mut self, list_type: ListType) -> bool {
-        unsafe {
-            to_bool(raw::cmark_node_set_list_type(self.raw, list_type.raw()))
-        }
-    }
+    node_getter!(list_start : i32 => NodeType::List);
+    node_setter!(set_list_start : i32 => NodeType::List);
 
-    pub fn delim_type(&self) -> DelimType {
-        unsafe {
-            DelimType::from_raw(raw::cmark_node_get_delim_type(self.raw))
-        }
-    }
+    node_getter!(list_tight : bool => NodeType::List);
+    node_setter!(set_list_tight : bool => NodeType::List);
 
-    pub fn set_delim_type(&mut self, delim_type: DelimType) -> bool {
-        unsafe {
-            to_bool(raw::cmark_node_set_delim_type(self.raw, delim_type.raw()))
-        }
-    }
+    node_getter!(fence_info : &str => NodeType::CodeBlock);
+    node_setter!(set_fence_info : &str => NodeType::CodeBlock);
 
-    pub fn list_start(&self) -> i32 {
-        unsafe {
-            raw::cmark_node_get_list_start(self.raw) as i32
-        }
-    }
+    node_getter!(url : &str => NodeType::Link, NodeType::Image);
+    node_setter!(set_url : &str => NodeType::Link, NodeType::Image);
 
-    pub fn set_list_start(&mut self, start: i32) -> bool {
-        unsafe {
-            to_bool(raw::cmark_node_set_list_start(self.raw, start as libc::c_int))
-        }
-    }
+    node_getter!(title : &str => NodeType::Link, NodeType::Image);
+    node_setter!(set_title : &str => NodeType::Link, NodeType::Image);
 
-    pub fn list_tight(&self) -> bool {
-        unsafe {
-            to_bool(raw::cmark_node_get_list_tight(self.raw))
-        }
-    }
-
-    pub fn set_list_tight(&mut self, tight: bool) -> bool {
-        unsafe {
-            to_bool(raw::cmark_node_set_list_tight(self.raw, from_bool(tight)))
-        }
-    }
-
-    pub fn fence_info(&self) -> Option<&str> {
-        unsafe {
-            from_string_ptr(raw::cmark_node_get_fence_info(self.raw))
-        }
-    }
-
-    pub fn set_fence_info(&mut self, info: &str) -> bool {
-        unsafe {
-            let cstr = CString::new(info).unwrap();
-            to_bool(raw::cmark_node_set_fence_info(self.raw, cstr.as_ptr()))
-        }
-    }
-
-    pub fn url(&self) -> Option<&str> {
-        unsafe {
-            from_string_ptr(raw::cmark_node_get_url(self.raw))
-        }
-    }
-
-    pub fn set_url(&mut self, url: &str) -> bool {
-        unsafe {
-            let cstr = CString::new(url).unwrap();
-            to_bool(raw::cmark_node_set_url(self.raw, cstr.as_ptr()))
-        }
-    }
-
-    pub fn title(&self) -> Option<&str> {
-        unsafe {
-            from_string_ptr(raw::cmark_node_get_title(self.raw))
-        }
-    }
-
-    pub fn set_title(&mut self, title: &str) -> bool {
-        unsafe {
-            let cstr = CString::new(title).unwrap();
-            to_bool(raw::cmark_node_set_title(self.raw, cstr.as_ptr()))
-        }
-    }
-
-    pub fn start_line(&self) -> i32 {
-        unsafe {
-            raw::cmark_node_get_start_line(self.raw) as i32
-        }
-    }
-
-    pub fn start_column(&self) -> i32 {
-        unsafe {
-            raw::cmark_node_get_start_column(self.raw) as i32
-        }
-    }
-
-    pub fn end_column(&self) -> i32 {
-        unsafe {
-            raw::cmark_node_get_end_column(self.raw) as i32
-        }
-    }
-
-    pub fn end_line(&self) -> i32 {
-        unsafe {
-            raw::cmark_node_get_end_line(self.raw) as i32
-        }
-    }
+    node_getter!(start_line : i32);
+    node_getter!(start_column : i32);
+    node_getter!(end_column: i32);
+    node_getter!(end_line : i32);
 
     pub fn unlink(&mut self) {
         unsafe {
@@ -255,25 +150,25 @@ impl Node {
 
     pub fn insert_before(&mut self, sibling: &mut Node) -> bool {
         unsafe {
-            to_bool(raw::cmark_node_insert_before(self.raw, sibling.raw))
+            Binding::from_raw(raw::cmark_node_insert_before(self.raw, sibling.raw))
         }
     }
 
     pub fn insert_after(&mut self, sibling: &mut Node) -> bool {
         unsafe {
-            to_bool(raw::cmark_node_insert_after(self.raw, sibling.raw))
+            Binding::from_raw(raw::cmark_node_insert_after(self.raw, sibling.raw))
         }
     }
 
     pub fn prepend_child(&mut self, child: &mut Node) -> bool {
         unsafe {
-            to_bool(raw::cmark_node_prepend_child(self.raw, child.raw))
+            Binding::from_raw(raw::cmark_node_prepend_child(self.raw, child.raw))
         }
     }
 
     pub fn append_child(&mut self, child: &mut Node) -> bool {
         unsafe {
-            to_bool(raw::cmark_node_append_child(self.raw, child.raw))
+            Binding::from_raw(raw::cmark_node_append_child(self.raw, child.raw))
         }
     }
 
@@ -292,28 +187,33 @@ impl Drop for Node {
     }
 }
 
-fn to_bool(val: libc::c_int) -> bool {
-    match val {
-        0 => false,
-        1 => true,
-        _ => panic!("Cannot convert to bool: {}", val)
+impl Binding for Node {
+    type Raw = *mut raw::cmark_node;
+
+    unsafe fn from_raw(raw: *mut raw::cmark_node) -> Node {
+        Node::from_raw(raw, false)
     }
+
+    fn raw(&self) -> *mut raw::cmark_node { self.raw }
 }
 
-fn from_bool(val: bool) -> libc::c_int {
-    match val {
-        true => 1 as libc::c_int,
-        false => 0 as libc::c_int,
-    }
-}
+impl Binding for Option<Node> {
+    type Raw = *mut raw::cmark_node;
 
-unsafe fn from_string_ptr<'a>(ptr: *const libc::c_char) -> Option<&'a str> {
-    if ptr.is_null() {
-        None
+    unsafe fn from_raw(raw: *mut raw::cmark_node) -> Option<Node> {
+        if raw.is_null() {
+            None
+        }
+        else {
+            Some(Binding::from_raw(raw))
+        }
     }
-    else {
-        let c_str = CStr::from_ptr(ptr);
-        str::from_utf8(c_str.to_bytes()).ok()
+
+    fn raw(&self) -> *mut raw::cmark_node {
+        match *self {
+            Some(ref node) => node.raw(),
+            None       => ptr::null_mut(),
+        }
     }
 }
 
@@ -326,6 +226,6 @@ mod test {
     fn test_node_type() {
         let node = Node::new(NodeType::List);
         assert!(node.node_type() == NodeType::List);
-        assert!(node.node_type_string() == "list");
+        assert!(node.type_string() == "list");
     }
 }

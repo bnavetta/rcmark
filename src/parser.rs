@@ -1,5 +1,6 @@
 
 use {raw, Node, CmarkOptions};
+use util::Binding;
 
 use std::ffi::CString;
 use libc;
@@ -70,6 +71,6 @@ mod test{
         let strong = paragraph.first_child().unwrap();
         assert!(strong.node_type() == NodeType::Strong);
         let text = strong.first_child().unwrap();
-        assert!(text.literal().unwrap() == "Hi");
+        assert!(text.literal() == "Hi");
     }
 }

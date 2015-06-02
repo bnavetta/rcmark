@@ -14,8 +14,7 @@
 //! programmatically or by parsing CommonMark source. Nodes all have a type and
 //! may have parent, child, and sibling nodes. Depending on the node type, a
 //! variety of properties are available. If a property is not applicable to a
-//! given node type, then attempting to access it will return either an empty
-//! `Option` or an appropriate default value.
+//! given node type, then attempting to access it will panic.
 //!
 //!```
 //! use rcmark::{Node, NodeType, ListType};
@@ -24,7 +23,6 @@
 //!
 //! let mut heading = Node::new(NodeType::Header);
 //! heading.set_header_level(1);
-//! assert!(heading.list_type() == ListType::NoList);
 //!
 //! let mut heading_text = Node::new(NodeType::Text);
 //! heading_text.set_literal("Hello, World!");
@@ -42,6 +40,7 @@
 //! use rcmark::{Parser, parse_document, DEFAULT, NORMALIZE};
 //!
 //! let doc = parse_document("**Hello**, `World!`", DEFAULT);
+//! assert_eq!(doc.start_line(), 1);
 //!
 //! let mut parser = Parser::new(NORMALIZE);
 //! parser.feed("# Hello, World!");
@@ -71,7 +70,8 @@
 //! assert_eq!(rcmark::render_commonmark(&doc, rcmark::DEFAULT, 2),
 //!            "# Hello\n");
 //!```
-
+#![feature(concat_idents)]
+#![feature(trace_macros)]
 #[deny(missing_docs)]
 
 extern crate libc;
@@ -83,6 +83,8 @@ pub use iter::NodeIterator;
 pub use parser::{Parser, parse_document};
 pub use render::{render_xml, render_html, render_man, render_commonmark};
 
+use util::Binding;
+
 use std::ffi::CStr;
 use std::str;
 
@@ -90,6 +92,7 @@ mod node;
 mod iter;
 mod parser;
 mod render;
+mod util;
 
 /// The types of nodes that make up a CommonMark document.
 #[derive(PartialEq, Eq, Clone, Copy, Debug)]
@@ -116,10 +119,12 @@ pub enum NodeType {
     Image,
 }
 
-impl NodeType {
+impl Binding for NodeType {
+    type Raw = raw::cmark_node_type;
+
     /// Obtain a `NodeType` from the corresponding raw `cmark_node_type` enum value.
-    pub fn from_raw(raw_type: raw::cmark_node_type) -> NodeType {
-        match raw_type {
+    unsafe fn from_raw(raw: raw::cmark_node_type) -> NodeType {
+        match raw {
             raw::CMARK_NODE_NONE => NodeType::None,
             raw::CMARK_NODE_DOCUMENT => NodeType::Document,
             raw::CMARK_NODE_BLOCK_QUOTE => NodeType::BlockQuote,
@@ -143,7 +148,7 @@ impl NodeType {
     }
 
     /// Obtain the raw `cmark_node_type` enum value from a `NodeType`.
-    pub fn raw(&self) -> raw::cmark_node_type {
+    fn raw(&self) -> raw::cmark_node_type {
         match *self {
             NodeType::None => raw::CMARK_NODE_NONE,
             NodeType::Document => raw::CMARK_NODE_DOCUMENT,
@@ -176,16 +181,18 @@ pub enum ListType {
     Ordered
 }
 
-impl ListType {
-    pub fn from_raw(raw_type: raw::cmark_list_type) -> ListType {
-        match raw_type {
+impl Binding for ListType {
+    type Raw = raw::cmark_list_type;
+
+    unsafe fn from_raw(raw: raw::cmark_list_type) -> ListType {
+        match raw {
             raw::CMARK_NO_LIST => ListType::NoList,
             raw::CMARK_BULLET_LIST => ListType::Bullet,
             raw::CMARK_ORDERED_LIST => ListType::Ordered,
         }
     }
 
-    pub fn raw(&self) -> raw::cmark_list_type {
+    fn raw(&self) -> raw::cmark_list_type {
         match *self {
             ListType::NoList => raw::CMARK_NO_LIST,
             ListType::Bullet => raw::CMARK_BULLET_LIST,
@@ -204,16 +211,18 @@ pub enum DelimType {
     Paren
 }
 
-impl DelimType {
-    pub fn from_raw(raw_type: raw::cmark_delim_type) -> DelimType {
-        match raw_type {
+impl Binding for DelimType {
+    type Raw = raw::cmark_delim_type;
+
+    unsafe fn from_raw(raw: raw::cmark_delim_type) -> DelimType {
+        match raw {
             raw::CMARK_NO_DELIM => DelimType::NoDelim,
             raw::CMARK_PERIOD_DELIM => DelimType::Period,
             raw::CMARK_PAREN_DELIM => DelimType::Paren,
         }
     }
 
-    pub fn raw(&self) -> raw::cmark_delim_type {
+    fn raw(&self) -> raw::cmark_delim_type {
         match *self {
             DelimType::NoDelim => raw::CMARK_NO_DELIM,
             DelimType::Period => raw::CMARK_PERIOD_DELIM,
@@ -231,9 +240,11 @@ pub enum EventType {
     Exit
 }
 
-impl EventType {
-    pub fn from_raw(raw_type: raw::cmark_event_type) -> EventType {
-        match raw_type {
+impl Binding for EventType {
+    type Raw = raw::cmark_event_type;
+
+    unsafe fn from_raw(raw: raw::cmark_event_type) -> EventType {
+        match raw {
             raw::CMARK_EVENT_NONE => EventType::None,
             raw::CMARK_EVENT_DONE => EventType::Done,
             raw::CMARK_EVENT_ENTER => EventType::Enter,
@@ -241,7 +252,7 @@ impl EventType {
         }
     }
 
-    pub fn raw(&self) -> raw::cmark_event_type {
+    fn raw(&self) -> raw::cmark_event_type {
         match *self {
             EventType::None => raw::CMARK_EVENT_NONE,
             EventType::Done => raw::CMARK_EVENT_DONE,
@@ -267,16 +278,20 @@ bitflags! {
     }
 }
 
-impl CmarkOptions {
-    pub fn raw(&self) -> libc::c_int {
+impl Binding for CmarkOptions {
+    type Raw = libc::c_int;
+
+    unsafe fn from_raw(raw: libc::c_int) -> CmarkOptions {
+        CmarkOptions::from_bits_truncate(Binding::from_raw(raw))
+    }
+
+    fn raw(&self) -> libc::c_int {
         self.bits as libc::c_int
     }
 }
 
 pub fn cmark_version() -> i32 {
-    unsafe {
-        raw::cmark_version as i32
-    }
+    raw::cmark_version as i32
 }
 
 pub fn version<'a>() -> &'a str {
