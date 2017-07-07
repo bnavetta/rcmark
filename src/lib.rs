@@ -290,7 +290,7 @@ impl Binding for CmarkOptions {
 }
 
 pub fn cmark_version() -> i32 {
-    raw::cmark_version as i32
+    unsafe { raw::cmark_version as i32 }
 }
 
 pub fn version<'a>() -> &'a str {
