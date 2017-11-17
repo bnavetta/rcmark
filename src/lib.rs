@@ -17,12 +17,12 @@
 //! given node type, then attempting to access it will panic.
 //!
 //!```
-//! use rcmark::{Node, NodeType, ListType};
+//! use rcmark::{Node, NodeType};
 //!
 //! let mut root = Node::new(NodeType::Document);
 //!
-//! let mut heading = Node::new(NodeType::Header);
-//! heading.set_header_level(1);
+//! let mut heading = Node::new(NodeType::Heading);
+//! heading.set_heading_level(1);
 //!
 //! let mut heading_text = Node::new(NodeType::Text);
 //! heading_text.set_literal("Hello, World!");
@@ -57,11 +57,11 @@
 //!
 //! assert_eq!(rcmark::render_xml(&doc, rcmark::DEFAULT),
 //!            "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n\
-//!             <!DOCTYPE CommonMark SYSTEM \"CommonMark.dtd\">\n\
-//!             <document>\n  \
-//!               <header level=\"1\">\n    \
+//!             <!DOCTYPE document SYSTEM \"CommonMark.dtd\">\n\
+//!             <document xmlns=\"http://commonmark.org/xml/1.0\">\n  \
+//!               <heading level=\"1\">\n    \
 //!                 <text>Hello</text>\n  \
-//!               </header>\n\
+//!               </heading>\n\
 //!             </document>\n");
 //! assert_eq!(rcmark::render_html(&doc, rcmark::DEFAULT),
 //!            "<h1>Hello</h1>\n");
@@ -103,15 +103,17 @@ pub enum NodeType {
     List,
     Item,
     CodeBlock,
-    Html,
+    HtmlBlock,
+    CustomBlock,
     Paragraph,
-    Header,
-    Hrule,
+    Heading,
+    ThematicBreak,
     Text,
     SoftBreak,
     LineBreak,
     Code,
-    InlineHtml,
+    HtmlInline,
+    CustomInline,
     Emph,
     Strong,
     Link,
@@ -130,15 +132,17 @@ impl Binding for NodeType {
             raw::CMARK_NODE_LIST => NodeType::List,
             raw::CMARK_NODE_ITEM => NodeType::Item,
             raw::CMARK_NODE_CODE_BLOCK => NodeType::CodeBlock,
-            raw::CMARK_NODE_HTML => NodeType::Html,
+            raw::CMARK_NODE_HTML_BLOCK => NodeType::HtmlBlock,
+            raw::CMARK_NODE_CUSTOM_BLOCK => NodeType::CustomBlock,
             raw::CMARK_NODE_PARAGRAPH => NodeType::Paragraph,
-            raw::CMARK_NODE_HEADER => NodeType::Header,
-            raw::CMARK_NODE_HRULE => NodeType::Hrule,
+            raw::CMARK_NODE_HEADING => NodeType::Heading,
+            raw::CMARK_NODE_THEMATIC_BREAK => NodeType::ThematicBreak,
             raw::CMARK_NODE_TEXT => NodeType::Text,
             raw::CMARK_NODE_SOFTBREAK => NodeType::SoftBreak,
             raw::CMARK_NODE_LINEBREAK => NodeType::LineBreak,
             raw::CMARK_NODE_CODE => NodeType::Code,
-            raw::CMARK_NODE_INLINE_HTML => NodeType::InlineHtml,
+            raw::CMARK_NODE_HTML_INLINE => NodeType::HtmlInline,
+            raw::CMARK_NODE_CUSTOM_INLINE => NodeType::CustomInline,
             raw::CMARK_NODE_EMPH => NodeType::Emph,
             raw::CMARK_NODE_STRONG => NodeType::Strong,
             raw::CMARK_NODE_LINK => NodeType::Link,
@@ -155,15 +159,17 @@ impl Binding for NodeType {
             NodeType::List => raw::CMARK_NODE_LIST,
             NodeType::Item => raw::CMARK_NODE_ITEM,
             NodeType::CodeBlock => raw::CMARK_NODE_CODE_BLOCK,
-            NodeType::Html => raw::CMARK_NODE_HTML,
+            NodeType::HtmlBlock => raw::CMARK_NODE_HTML_BLOCK,
+            NodeType::CustomBlock => raw::CMARK_NODE_CUSTOM_BLOCK,
             NodeType::Paragraph => raw::CMARK_NODE_PARAGRAPH,
-            NodeType::Header => raw::CMARK_NODE_HEADER,
-            NodeType::Hrule => raw::CMARK_NODE_HRULE,
+            NodeType::Heading => raw::CMARK_NODE_HEADING,
+            NodeType::ThematicBreak => raw::CMARK_NODE_THEMATIC_BREAK,
             NodeType::Text => raw::CMARK_NODE_TEXT,
             NodeType::SoftBreak => raw::CMARK_NODE_SOFTBREAK,
             NodeType::LineBreak => raw::CMARK_NODE_LINEBREAK,
             NodeType::Code => raw::CMARK_NODE_CODE,
-            NodeType::InlineHtml => raw::CMARK_NODE_INLINE_HTML,
+            NodeType::HtmlInline => raw::CMARK_NODE_HTML_INLINE,
+            NodeType::CustomInline => raw::CMARK_NODE_CUSTOM_INLINE,
             NodeType::Emph => raw::CMARK_NODE_EMPH,
             NodeType::Strong => raw::CMARK_NODE_STRONG,
             NodeType::Link => raw::CMARK_NODE_LINK,

@@ -21,10 +21,11 @@ pub enum cmark_node_type {
     CMARK_NODE_LIST,
     CMARK_NODE_ITEM,
     CMARK_NODE_CODE_BLOCK,
-	  CMARK_NODE_HTML,
-	  CMARK_NODE_PARAGRAPH,
-	  CMARK_NODE_HEADER,
-	  CMARK_NODE_HRULE,
+    CMARK_NODE_HTML_BLOCK,
+    CMARK_NODE_CUSTOM_BLOCK,
+    CMARK_NODE_PARAGRAPH,
+    CMARK_NODE_HEADING,
+    CMARK_NODE_THEMATIC_BREAK,
 
     // CMARK_NODE_FIRST_BLOCK = CMARK_NODE_DOCUMENT,
     // CMARK_NODE_LAST_BLOCK = CMARK_NODE_HRULE,
@@ -34,7 +35,8 @@ pub enum cmark_node_type {
     CMARK_NODE_SOFTBREAK,
     CMARK_NODE_LINEBREAK,
     CMARK_NODE_CODE,
-    CMARK_NODE_INLINE_HTML,
+    CMARK_NODE_HTML_INLINE,
+    CMARK_NODE_CUSTOM_INLINE,
     CMARK_NODE_EMPH,
     CMARK_NODE_STRONG,
     CMARK_NODE_LINK,
@@ -110,8 +112,8 @@ extern {
     pub fn cmark_node_get_type_string(node: *const cmark_node) -> *const c_char;
     pub fn cmark_node_get_literal(node: *const cmark_node) -> *const c_char;
     pub fn cmark_node_set_literal(node: *mut cmark_node, content: *const c_char) -> c_int;
-    pub fn cmark_node_get_header_level(node: *const cmark_node) -> c_int;
-    pub fn cmark_node_set_header_level(node: *mut cmark_node, level: c_int) -> c_int;
+    pub fn cmark_node_get_heading_level(node: *const cmark_node) -> c_int;
+    pub fn cmark_node_set_heading_level(node: *mut cmark_node, level: c_int) -> c_int;
     pub fn cmark_node_get_list_type(node: *const cmark_node) -> cmark_list_type;
     pub fn cmark_node_set_list_type(node: *mut cmark_node, list_type: cmark_list_type) -> c_int;
     pub fn cmark_node_get_list_delim(node: *const cmark_node) -> cmark_delim_type;
