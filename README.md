@@ -1,6 +1,6 @@
 # rcmark
 
-[cmark](https://github.com/jgm/cmark) bindings for Rust.
+[cmark](https://github.com/commonmark/cmark) bindings for Rust.
 
 ## Building
 

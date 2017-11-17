@@ -110,12 +110,12 @@ mod test{
         let markdown = "**Hi**";
         let tree = parse_document(markdown, DEFAULT);
 
-        assert!(tree.node_type() == NodeType::Document);
+        assert_eq!(tree.node_type(), NodeType::Document);
         let paragraph = tree.first_child().unwrap();
-        assert!(paragraph.node_type() == NodeType::Paragraph);
+        assert_eq!(paragraph.node_type(), NodeType::Paragraph);
         let strong = paragraph.first_child().unwrap();
-        assert!(strong.node_type() == NodeType::Strong);
+        assert_eq!(strong.node_type(), NodeType::Strong);
         let text = strong.first_child().unwrap();
-        assert!(text.literal() == "Hi");
+        assert_eq!(text.literal(), "Hi");
     }
 }

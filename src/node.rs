@@ -180,25 +180,25 @@ impl Node {
     /// Get the string contents of this node.
     ///
     /// # Panics
-    /// If the node type is not `Code`, `Text`, `Html`, or `InnerHtml`.
+    /// If the node type is not `Code`, `Text`, `HtmlBlock`, or `HtmlInline`.
     node_getter!(literal : &str => NodeType::CodeBlock,
                  NodeType::Code,
                  NodeType::Text,
-                 NodeType::Html,
-                 NodeType::InlineHtml);
+                 NodeType::HtmlBlock,
+                 NodeType::HtmlInline);
 
     /// Set the string contents of this node.
     ///
     /// # Panics
-    /// If the node type is not `Code`, `Text`, `Html`, or `InnerHtml`.
+    /// If the node type is not `Code`, `Text`, `HtmlBlock`, or `HtmlInline`.
     node_setter!(set_literal : &str => NodeType::CodeBlock,
                  NodeType::Code,
                  NodeType::Text,
-                 NodeType::Html,
-                 NodeType::InlineHtml);
+                 NodeType::HtmlBlock,
+                 NodeType::HtmlInline);
 
-    node_getter!(header_level : i32 => NodeType::Header);
-    node_setter!(set_header_level : i32 => NodeType::Header);
+    node_getter!(heading_level : i32 => NodeType::Heading);
+    node_setter!(set_heading_level : i32 => NodeType::Heading);
 
     node_getter!(list_type : ListType => NodeType::List);
     node_setter!(set_list_type : ListType => NodeType::List);
